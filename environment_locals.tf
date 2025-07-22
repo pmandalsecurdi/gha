@@ -1,5 +1,17 @@
-locals {
-  okta_api_token = getenv("OKTA_API_TOKEN")
-  okta_org_name  = getenv("OKTA_ORG_NAME")
-  okta_base_url  = getenv("OKTA_BASE_URL")
+variable "okta_api_token" {
+  type        = string
+  description = "Okta API Token"
+  default     = null
+}
+
+variable "okta_org_name" {
+  type        = string
+  description = "Okta Org Name"
+  default     = null
+}
+
+variable "okta_base_url" {
+  type        = string
+  description = "Okta Base URL (e.g., okta.com)"
+  default     = null
 }
