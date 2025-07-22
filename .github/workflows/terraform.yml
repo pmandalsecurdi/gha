@@ -23,12 +23,14 @@ jobs:
 
       - name: Export environment secrets
         run: |
-          echo "OKTA_API_TOKEN=${{ secrets.OKTA_API_TOKEN }}" >> $GITHUB_ENV
-          echo "OKTA_ORG_NAME=${{ secrets.OKTA_ORG_NAME }}" >> $GITHUB_ENV
-          echo "OKTA_BASE_URL=${{ secrets.OKTA_BASE_URL }}" >> $GITHUB_ENV
+          echo "TF_VAR_okta_api_token=${{ secrets.OKTA_API_TOKEN }}" >> $GITHUB_ENV
+          echo "TF_VAR_okta_org_name=${{ secrets.OKTA_ORG_NAME }}" >> $GITHUB_ENV
+          echo "TF_VAR_okta_base_url=${{ secrets.OKTA_BASE_URL }}" >> $GITHUB_ENV
 
-      - name: Ensure output folder exists
-        run: mkdir -p output
+      - name: Ensure output folder and placeholder
+        run: |
+          mkdir -p output
+          echo "No apps yet" > output/placeholder.txt
 
       - name: Terraform Init
         run: terraform init
