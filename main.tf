@@ -127,3 +127,6 @@ output "apps_created" {
     bookmark = keys(okta_app_bookmark.bookmark_apps)
   }
 }
+
+# Dummy resource to ensure terraform.tfstate is always generated
+resource "null_resource" "always_apply" {}
