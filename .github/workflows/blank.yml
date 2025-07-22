@@ -13,37 +13,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout your code
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Step 2: Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.6
 
-      # Step 3: Set up secrets as environment variables
       - name: Export environment secrets
         run: |
           echo "OKTA_API_TOKEN=${{ secrets.OKTA_API_TOKEN }}" >> $GITHUB_ENV
           echo "OKTA_ORG_NAME=${{ secrets.OKTA_ORG_NAME }}" >> $GITHUB_ENV
           echo "OKTA_BASE_URL=${{ secrets.OKTA_BASE_URL }}" >> $GITHUB_ENV
 
-      # Step 4: Terraform Init
+      - name: Ensure output folder exists
+        run: mkdir -p output
+
       - name: Terraform Init
         run: terraform init
 
-      # Step 5: Terraform Validate
       - name: Terraform Validate
         run: terraform validate
 
-      # Step 6: Terraform Plan
-        # Optional: show output for debugging in PRs
       - name: Terraform Plan
         run: terraform plan
 
-      # Step 7: Terraform Apply — only if it's a push to master
       - name: Terraform Apply
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: terraform apply -auto-approve
+
+      - name: Commit Updated Terraform State
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add terraform.tfstate terraform.tfstate.backup || true
+          git commit -m "Update terraform state [skip ci]" || echo "No changes to commit"
+          git push origin master
+
+      - name: Upload Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: okta-app-logs
+          path: output/
