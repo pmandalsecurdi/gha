@@ -6,20 +6,12 @@ terraform {
     }
   }
 }
-/*
-provider "okta" {
-  org_name  = var.okta_org_name
-  base_url  = var.okta_base_url
-  api_token = var.okta_api_token
-}*/
+
 provider "okta" {
   org_name  = local.okta_org_name
   base_url  = local.okta_base_url
   api_token = local.okta_api_token
 }
-
-/*The Terraform state (.tfstate) needs to be configured with Atlantis to store in an S3 bucket. 
-Since this requires assistance from the DevOps team, the setup has not been completed yet.*/
 
 locals {
   apps_data     = yamldecode(file("${path.module}/apps.yaml"))
@@ -29,10 +21,7 @@ locals {
   apps_bookmark = try(local.apps_data.bookmark, [])
 }
 
-######################
-# OIDC Applications #
-######################
-
+# OIDC
 resource "okta_app_oauth" "oidc_apps" {
   for_each = { for app in local.apps_oidc : app.label => app }
 
@@ -47,13 +36,9 @@ resource "okta_app_oauth" "oidc_apps" {
 
   user_name_template_type = "BUILT_IN"
   user_name_template      = "$${source.login}"
-
 }
 
-######################
-# SAML Applications #
-######################
-
+# SAML
 resource "okta_app_saml" "saml_apps" {
   for_each = { for app in local.apps_saml : app.label => app }
 
@@ -83,10 +68,7 @@ resource "okta_app_saml" "saml_apps" {
   }
 }
 
-####################
-# SWA Applications #
-####################
-
+# SWA
 resource "okta_app_swa" "swa_apps" {
   for_each = { for app in local.apps_swa : app.label => app }
 
@@ -100,11 +82,7 @@ resource "okta_app_swa" "swa_apps" {
   user_name_template_type = "BUILT_IN"
 }
 
-
-#########################
-# Bookmark Applications #
-#########################
-
+# Bookmark
 resource "okta_app_bookmark" "bookmark_apps" {
   for_each = { for app in local.apps_bookmark : app.label => app }
 
@@ -112,39 +90,39 @@ resource "okta_app_bookmark" "bookmark_apps" {
   url   = each.value.url
 }
 
-
-###################
-#     Logging     # 
-###################
-
-/*For testing purposes, logging has been configured to a local folder. 
-This should be moved to a CloudWatch log group in the future.*/
-
-
+# Logging
 resource "local_file" "app_log" {
   for_each = merge(
     { for k, v in okta_app_oauth.oidc_apps : k => {
       id    = v.id,
       type  = "OIDC",
       extra = "ClientID=${v.client_id} ClientSecret=${v.client_secret}"
-    } },
+    }},
     { for k, v in okta_app_saml.saml_apps : k => {
       id    = v.id,
       type  = "SAML",
       extra = "MetadataURL=${v.metadata_url}"
-    } },
+    }},
     { for k, v in okta_app_swa.swa_apps : k => {
       id    = v.id,
       type  = "SWA",
       extra = ""
-    } },
+    }},
     { for k, v in okta_app_bookmark.bookmark_apps : k => {
       id    = v.id,
       type  = "BOOKMARK",
       extra = ""
-    } }
+    }}
   )
-
   content  = "[${each.value.type}] ${each.key} - ID: ${each.value.id} - Status: SUCCESS - ${each.value.extra}"
   filename = "${path.module}/output/app_log_${each.key}.txt"
+}
+
+output "apps_created" {
+  value = {
+    oidc     = keys(okta_app_oauth.oidc_apps)
+    saml     = keys(okta_app_saml.saml_apps)
+    swa      = keys(okta_app_swa.swa_apps)
+    bookmark = keys(okta_app_bookmark.bookmark_apps)
+  }
 }
