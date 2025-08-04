@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ "master" ]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy (e.g., dev, prod)'
+        required: true
+        default: 'dev'
 
 jobs:
   terraform:
@@ -45,14 +50,18 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: terraform apply -auto-approve
 
-      - name: Commit Updated Terraform State
+      - name: Backup State to External Repo
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add terraform.tfstate terraform.tfstate.backup || true
-          git commit -m "Update terraform state [skip ci]" || echo "No changes to commit"
-          git push origin master
+          git clone https://x-access-token:${{ secrets.STATE_REPO_PAT }}@github.com/YOUR_USERNAME/terraform-state-backup.git state-repo
+          mkdir -p state-repo/${{ github.event.inputs.environment }}
+          cp terraform.tfstate .terraform.lock.hcl state-repo/${{ github.event.inputs.environment }}/
+          cd state-repo
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Backup state for ${{ github.event.inputs.environment }} at $(date -u)" || echo "No changes"
+          git push
 
       - name: Upload Logs
         if: always()
