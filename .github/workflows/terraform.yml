@@ -1,10 +1,6 @@
 name: Terraform Okta Integration
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
   workflow_dispatch:
     inputs:
       environment:
@@ -14,28 +10,30 @@ on:
 
 jobs:
   terraform:
-    name: Terraform Plan & Apply
+    name: Terraform Workflow with External State
     runs-on: ubuntu-latest
 
+    env:
+      TF_VAR_okta_api_token: ${{ secrets.OKTA_API_TOKEN }}
+      TF_VAR_okta_org_name: ${{ secrets.OKTA_ORG_NAME }}
+      TF_VAR_okta_base_url: ${{ secrets.OKTA_BASE_URL }}
+
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Restore Terraform State from External Repo
+        run: |
+          ENV_NAME=${{ github.event.inputs.environment }}
+          git clone https://x-access-token:${{ secrets.STATE_REPO_PAT }}@github.com/${{ github.repository_owner }}/iam_terraform_state.git state-repo
+          mkdir -p state-repo/$ENV_NAME
+          cp -f state-repo/$ENV_NAME/terraform.tfstate terraform.tfstate || echo "No previous terraform.tfstate found"
+          cp -f state-repo/$ENV_NAME/.terraform.lock.hcl .terraform.lock.hcl || echo "No previous lock file found"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.6
-
-      - name: Export environment secrets
-        run: |
-          echo "TF_VAR_okta_api_token=${{ secrets.OKTA_API_TOKEN }}" >> $GITHUB_ENV
-          echo "TF_VAR_okta_org_name=${{ secrets.OKTA_ORG_NAME }}" >> $GITHUB_ENV
-          echo "TF_VAR_okta_base_url=${{ secrets.OKTA_BASE_URL }}" >> $GITHUB_ENV
-
-      - name: Ensure output folder and placeholder
-        run: |
-          mkdir -p output
-          echo "No apps yet" > output/placeholder.txt
 
       - name: Terraform Init
         run: terraform init
@@ -43,24 +41,18 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
-      - name: Terraform Plan
-        run: terraform plan
-
       - name: Terraform Apply
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: terraform apply -auto-approve
 
-      - name: Backup State to External Repo
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      - name: Backup Updated State to External Repo
         run: |
-          git clone https://x-access-token:${{ secrets.STATE_REPO_PAT }}@github.com/YOUR_USERNAME/terraform-state-backup.git state-repo
-          mkdir -p state-repo/${{ github.event.inputs.environment }}
-          cp terraform.tfstate .terraform.lock.hcl state-repo/${{ github.event.inputs.environment }}/
+          ENV_NAME=${{ github.event.inputs.environment }}
+          cp -f terraform.tfstate .terraform.lock.hcl state-repo/$ENV_NAME/
           cd state-repo
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Backup state for ${{ github.event.inputs.environment }} at $(date -u)" || echo "No changes"
+          git commit -m "Backup state for $ENV_NAME at $(date -u)" || echo "No changes to commit"
           git push
 
       - name: Upload Logs
