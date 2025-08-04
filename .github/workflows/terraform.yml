@@ -19,7 +19,7 @@ jobs:
       TF_VAR_okta_base_url: ${{ secrets.OKTA_BASE_URL }}
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Main Repo
         uses: actions/checkout@v4
 
       - name: Restore Terraform State from External Repo
