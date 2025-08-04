@@ -8,9 +8,9 @@ terraform {
 }
 
 provider "okta" {
-  org_name  = var.okta_org_name
-  base_url  = var.okta_base_url
-  api_token = var.okta_api_token
+  org_name  = local.okta_org_name
+  base_url  = local.okta_base_url
+  api_token = local.okta_api_token
 }
 
 locals {
