@@ -1,5 +1,5 @@
 
-# Okta Application Onboarding with Terraform
+# Okta Application Onboarding with Terraform1
 
 This project automates the onboarding of various application types into Okta using Terraform and a YAML input file.
 
