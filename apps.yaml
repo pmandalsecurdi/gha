@@ -39,4 +39,5 @@ swa:
 bookmark:
   - label: "Bookmark-BETA"
     url: "https://google.com"
+    logo_path: "asset/bookmark-logo.png"
     
