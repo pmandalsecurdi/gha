@@ -23,7 +23,7 @@ resource "okta_app_saml" "saml_apps" {
   assertion_signed               = try(each.value.assertion_signed, true)
   signature_algorithm            = try(each.value.signature_algorithm, "RSA_SHA256")
   digest_algorithm               = try(each.value.digest_algorithm, "SHA256")
-  authn_context_class_ref        = try(each.value.authn_context_class_ref, null)
+  authn_context_class_ref        = try(each.value.authn_context_class_ref, "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport")
 
  # Load certificate from file path if defined
   x509_certificate               = try(
