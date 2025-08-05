@@ -21,6 +21,7 @@ saml:
     signature_algorithm: "RSA_SHA256"
     digest_algorithm: "SHA256"
     authn_context_class_ref: "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"
+    x509_certificate_path: "certs/my_sp_cert.pem"
     attribute_statements:
       - name: "email"
         values: ["user.email"]
