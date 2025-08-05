@@ -10,7 +10,7 @@ resource "okta_app_saml" "saml_apps" {
   for_each = { for app in var.apps : app.label => app }
 
   label                          = each.value.label
-  status                         = "ACTIVE"
+  status                         = try(each.value.status, "ACTIVE")
   sso_url                        = each.value.acs_url
   recipient                      = each.value.acs_url
   destination                    = each.value.acs_url
