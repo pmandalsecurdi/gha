@@ -11,5 +11,6 @@ resource "okta_app_bookmark" "bookmark_apps" {
 
   label = each.value.label
   url   = each.value.url
+  logo  = try(filebase64("${path.module}/${each.value.logo_path}"), null)
 
 }
