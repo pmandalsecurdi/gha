@@ -54,10 +54,3 @@ jobs:
           git add .
           git commit -m "Backup state for $ENV_NAME at $(date -u)" || echo "No changes to commit"
           git push
-
-      - name: Upload Logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: okta-app-logs
-          path: output/
