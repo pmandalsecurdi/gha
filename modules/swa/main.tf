@@ -16,5 +16,4 @@ resource "okta_app_swa" "swa_apps" {
   button_field    = try(each.value.button_field, "btn-login")
   user_name_template       = "$${source.login}"
   user_name_template_type  = "BUILT_IN"
-  logo = "${each.value.logo_path}"
 }
