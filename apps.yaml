@@ -1,5 +1,5 @@
 oidc:
-  - label: "OIDC-BETA"
+  - label: "OIDC-choco"
     type: web
     redirect_uris: ["https://openidconnect.net/callback"]
     grant_types: ["authorization_code"]
@@ -9,7 +9,7 @@ oidc:
     post_logout_redirect_uris: ["https://openidconnect.net/logout"]
 
 saml:
-  - label: "SAML-BETA"
+  - label: "SAML-choco"
     acs_url: "https://example.com/sso/acs"
     audience: "IAMShowcase"
     subject_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
@@ -31,7 +31,7 @@ saml:
         values: ["user.lastName"]
 
 swa:
-  - label: "SWA-BETA"
+  - label: "SWA-choco"
     url: "https://example.com/login"
     username_field: "txtbox-username"
     password_field: "txtbox-password"
@@ -40,7 +40,7 @@ swa:
 
 
 bookmark:
-  - label: "Bookmark-BETA"
+  - label: "Bookmark-choco"
     url: "https://google.com"
     logo_path: "assets/bookmark-logo.png"
     
