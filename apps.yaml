@@ -36,6 +36,8 @@ swa:
     username_field: "txtbox-username"
     password_field: "txtbox-password"
     button_field: "btn-login"
+    logo_path: "asset/bookmark-logo.png"
+
 
 bookmark:
   - label: "Bookmark-BETA"
