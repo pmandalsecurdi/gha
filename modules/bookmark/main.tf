@@ -11,5 +11,5 @@ resource "okta_app_bookmark" "bookmark_apps" {
 
   label = each.value.label
   url   = each.value.url
-  logo = "${path.module}/${each.value.logo_path}"
+  logo = "${each.value.logo_path}"
 }
