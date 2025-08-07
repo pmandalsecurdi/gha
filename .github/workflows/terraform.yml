@@ -25,7 +25,7 @@ jobs:
       - name: Clone Terraform State Repo
         run: |
           ENV_NAME=${{ github.event.inputs.environment }}
-          git clone https://x-access-token:${{ secrets.passme }}@github.com/${{ github.repository_owner }}/IAMTerraform_OKTA_state.git state-repo
+          git clone https://x-access-token:${{ secrets.STATE_REPO_PAT }}@github.com/${{ github.repository_owner }}/iam_terraform_state.git state-repo
           mkdir -p state-repo/$ENV_NAME
           cp -f state-repo/$ENV_NAME/terraform.tfstate terraform.tfstate || echo "No previous terraform.tfstate found"
           cp -f state-repo/$ENV_NAME/.terraform.lock.hcl .terraform.lock.hcl || echo "No previous lock file found"
@@ -53,4 +53,4 @@ jobs:
           git config user.email "github-actions@github.com"
           git add .
           git commit -m "Backup state for $ENV_NAME at $(date -u)" || echo "No changes to commit"
-          git push https://x-access-token:${{ secrets.passme }}@github.com/${{ github.repository_owner }}/IAMTerraform_OKTA_state.git HEAD:main
+          git push https://x-access-token:${{ secrets.passme }}@github.com/${{ github.repository_owner }}/iam_terraform_state.git HEAD:main
