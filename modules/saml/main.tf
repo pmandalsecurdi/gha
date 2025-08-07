@@ -25,11 +25,6 @@ resource "okta_app_saml" "saml_apps" {
   digest_algorithm               = try(each.value.digest_algorithm, "SHA256")
   authn_context_class_ref        = try(each.value.authn_context_class_ref, "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport")
 
- # Load certificate from file path if defined
-  x509_certificate               = try(
-    file("${path.module}/${each.value.x509_certificate_path}"),
-    null
-  )
 
   dynamic "attribute_statements" {
     for_each = try(each.value.attribute_statements, [])
