@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      TF_VAR_okta_api_token: ${{ secrets.IAM_APP_ONBOARD_TF_DEV }}
+      TF_VAR_okta_api_token: ${{ secrets.OKTA_API_TOKEN }}
       TF_VAR_okta_org_name: ${{ secrets.OKTA_ORG_NAME }}
       TF_VAR_okta_base_url: ${{ secrets.OKTA_BASE_URL }}
 
