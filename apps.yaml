@@ -49,6 +49,8 @@ saml:
     acs_url: "https://sptest.iamshowcase.com/acs"
     audience: "IAMShowcase"
     subject_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+    subject_name_id_template: "{user.email}"
+    user_name_template: "{user.email}"
     
 
 
