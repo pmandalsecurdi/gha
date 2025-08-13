@@ -34,3 +34,4 @@ resource "okta_app_saml" "saml_apps" {
       values = attribute_statements.value.values
     }
   }
+}
