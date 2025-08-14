@@ -50,7 +50,12 @@ saml:
     audience: "IAMShowcase"
     subject_name_id_template: "user.email"
     user_name_template: "user.email"
-    
+
+oidc:
+  - label: "OIDC-web"
+    type: web
+    redirect_uris: ["https://app.example.com/callback"]
+
 
 
   
