@@ -1,11 +1,11 @@
 terraform {
   required_providers {
     okta = {
-      source  = "okta/okta"
-      version = "~> 5.0"
+      source = "okta/okta"
     }
   }
 }
+
 
 resource "okta_app_oauth" "oidc_apps" {
   for_each = { for app in var.apps : app.label => app }
