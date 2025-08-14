@@ -1,7 +1,8 @@
 terraform {
   required_providers {
     okta = {
-      source = "okta/okta"
+      source  = "okta/okta"
+      version = "~> 5.0"
     }
   }
 }
@@ -9,14 +10,31 @@ terraform {
 resource "okta_app_oauth" "oidc_apps" {
   for_each = { for app in var.apps : app.label => app }
 
-  label                        = each.value.label
-  type                         = try(each.value.type, "web")
-  redirect_uris               = each.value.redirect_uris
-  grant_types                 = try(each.value.grant_types, ["authorization_code"])
-  response_types              = try(each.value.response_types, ["code"])
-  token_endpoint_auth_method  = try(each.value.token_endpoint_auth_method, "client_secret_post")
-  login_uri                   = try(each.value.login_uri, null)
-  post_logout_redirect_uris  = try(each.value.post_logout_redirect_uris, null)
-  user_name_template_type     = "BUILT_IN"
-  user_name_template          = "$${source.login}"
+  label = each.value.label
+  type  = lookup(each.value, "type", "web")
+
+  token_endpoint_auth_method = coalesce(
+    try(each.value.token_endpoint_auth_method, null),
+    contains(["web", "service"], lookup(each.value, "type", "web")) ? "client_secret_post" : "none"
+  )
+
+  grant_types = coalesce(
+    try(each.value.grant_types, null),
+    lookup(each.value, "type", "web") == "service" ? ["client_credentials"] : ["authorization_code"]
+  )
+
+  response_types = coalesce(
+    try(each.value.response_types, null),
+    lookup(each.value, "type", "web") == "service" ? [] : ["code"]
+  )
+
+  redirect_uris = lookup(each.value, "type", "web") == "service" ? [] : each.value.redirect_uris
+  post_logout_redirect_uris = lookup(each.value, "type", "web") == "service" ? null : lookup(each.value, "post_logout_redirect_uris", null)
+
+  login_uri = lookup(each.value, "login_uri", null)
+
+  user_name_template       = try(replace(replace(lookup(each.value, "user_name_template", null), "{", ""), "}", ""), null)
+  user_name_template_type  = user_name_template != null ? "CUSTOM" : "BUILT_IN"
+
+  omit_secret = contains(["browser", "native"], lookup(each.value, "type", "web")) ? true : null
 }
