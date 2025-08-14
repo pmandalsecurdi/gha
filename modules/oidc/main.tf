@@ -34,7 +34,8 @@ resource "okta_app_oauth" "oidc_apps" {
   login_uri = lookup(each.value, "login_uri", null)
 
   user_name_template       = try(replace(replace(lookup(each.value, "user_name_template", null), "{", ""), "}", ""), null)
-  user_name_template_type  = user_name_template != null ? "CUSTOM" : "BUILT_IN"
+  user_name_template_type = length(trimspace(lookup(each.value, "user_name_template", ""))) > 0 ? "CUSTOM" : "BUILT_IN"
+
 
   omit_secret = contains(["browser", "native"], lookup(each.value, "type", "web")) ? true : null
 }
