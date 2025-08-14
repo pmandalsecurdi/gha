@@ -52,7 +52,7 @@ saml:
     user_name_template: "user.email"
 
 oidc:
-  - label: "OIDC-web"
+  - label: "OIDC-PIZZA"
     type: web
     redirect_uris: ["https://app.example.com/callback"]
 
