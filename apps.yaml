@@ -56,6 +56,12 @@ oidc:
     type: web
     redirect_uris: ["https://app.example.com/callback"]
 
+swa:
+  - label: "SWA-kutta"
+    url: "https://example.com/login"
+    logo_path: "assets/bookmark-logo.png"
+
+
 
 
   
