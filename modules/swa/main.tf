@@ -16,6 +16,7 @@ resource "okta_app_swa" "swa_apps" {
   button_field    = try(each.value.button_field, "btn-login")
   user_name_template       = "$${source.login}"
   user_name_template_type  = "BUILT_IN"
+  status = lookup(each.value, "status", "ACTIVE")
   logo = "${path.root}/${each.value.logo_path}"
 lifecycle {
     prevent_destroy = true
