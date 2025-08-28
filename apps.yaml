@@ -1,29 +1,36 @@
 oidc:
   - label: "OIDC-lele"
-    type: web
+    type: "web"
     redirect_uris: ["https://openidconnect.net/callback"]
+    post_logout_redirect_uris: ["https://openidconnect.net/logout"]
     grant_types: ["authorization_code"]
     response_types: ["code"]
-    token_endpoint_auth_method: client_secret_post
-    login_uri: "https://samples.auth0.com/login"
-    post_logout_redirect_uris: ["https://openidconnect.net/logout"]
+    token_endpoint_auth_method: "client_secret_post"
+    initiate_login_uri: "https://samples.auth0.com/login"
     status: "ACTIVE"
+
+  - label: "OIDC-PIZZA"
+    type: "web"
+    redirect_uris: ["https://app.example.com/callback"]
+    grant_types: ["authorization_code"]
+    response_types: ["code"]
+    token_endpoint_auth_method: "client_secret_post"
+    status: "INACTIVE"
 
 saml:
   - label: "SAML-lele"
     acs_url: "https://example.com/sso/acs"
     audience: "IAMShowcase"
-    subject_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
-    subject_name_id_template: "{user.email}"
-    user_name_template: "{user.email}"
     status: "ACTIVE"
+    subject_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+    subject_name_id_template: "user.email"
+    user_name_template: "user.email"
     user_name_template_push_status: "PUSH"
     response_signed: true
     assertion_signed: true
     signature_algorithm: "RSA_SHA256"
     digest_algorithm: "SHA256"
     authn_context_class_ref: "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"
-    x509_certificate_path: "certs/my_sp_cert.pem"
     attribute_statements:
       - name: "email"
         values: ["user.email"]
@@ -32,6 +39,14 @@ saml:
       - name: "lastName"
         values: ["user.lastName"]
 
+  - label: "SAML-TAMATAR"
+    acs_url: "https://sptest.iamshowcase.com/acs"
+    audience: "IAMShowcase"
+    status: "ACTIVE"
+    subject_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+    subject_name_id_template: "user.email"
+    user_name_template: "user.email"
+
 swa:
   - label: "SWA-lele"
     url: "https://example.com/login"
@@ -39,33 +54,11 @@ swa:
     password_field: "txtbox-password"
     button_field: "btn-login"
     status: "ACTIVE"
-    logo_path: "assets/bookmark-logo.png"
-
+    # If your module supports a logo file, keep this; otherwise remove.
+    logo_path: "assets/swa-logo.png"
 
 bookmark:
   - label: "Bookmark-lele"
     url: "https://google.com"
     status: "ACTIVE"
     logo_path: "assets/bookmark-logo.png"
-
-saml:
-  - label: "SAML-TAMATAR"
-    acs_url: "https://sptest.iamshowcase.com/acs"
-    audience: "IAMShowcase"
-    status: "ACTIVE"
-    subject_name_id_template: "user.email"
-    user_name_template: "user.email"
-
-oidc:
-  - label: "OIDC-PIZZA"
-    type: web
-    status: "INACTIVE"
-    redirect_uris: ["https://app.example.com/callback"]
-
-
-
-
-
-
-  
-  
