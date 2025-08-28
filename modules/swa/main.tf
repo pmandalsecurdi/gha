@@ -17,4 +17,7 @@ resource "okta_app_swa" "swa_apps" {
   user_name_template       = "$${source.login}"
   user_name_template_type  = "BUILT_IN"
   logo = "${path.root}/${each.value.logo_path}"
+  lifecycle {
+    prevent_destroy = true
+}
 }
