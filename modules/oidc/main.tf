@@ -38,4 +38,7 @@ resource "okta_app_oauth" "oidc_apps" {
 
 
   omit_secret = contains(["browser", "native"], lookup(each.value, "type", "web")) ? true : null
+ lifecycle {
+    prevent_destroy = true
+}
 }
