@@ -16,7 +16,6 @@ resource "okta_app_saml" "saml_apps" {
   recipient   = each.value.acs_url
   destination = each.value.acs_url
   audience    = each.value.audience
-  status = lookup(each.value, "status", "ACTIVE")
 
   # NameID format + template (NameID MUST be an evaluated expression)
   subject_name_id_format = lookup(
