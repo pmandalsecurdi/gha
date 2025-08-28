@@ -59,7 +59,7 @@ saml:
 oidc:
   - label: "OIDC-PIZZA"
     type: web
-    status: "ACTIVE"
+    status: "INACTIVE"
     redirect_uris: ["https://app.example.com/callback"]
 
 
