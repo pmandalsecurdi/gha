@@ -67,3 +67,12 @@ saml:
     audience: "https://example.com/entityid"
     subject_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
 
+saml:
+  - label: "SAML-Minimal"
+    acs_url: "https://example.com/sso/acs"
+    audience: "https://example.com/entityid"
+    subject_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
+bookmark:
+  - label: "Bookmark-damu"
+    url: "https://google.com"
+    logo_path: "assets/bookmark-logo.png"
