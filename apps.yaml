@@ -1,5 +1,5 @@
 oidc:
-  - label: "OIDC-CHA"
+  - label: "OIDC-CHAp"
     type: web
     redirect_uris: ["https://openidconnect.net/callback"]
     grant_types: ["authorization_code"]
