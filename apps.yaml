@@ -85,3 +85,7 @@ bookmark:
   - label: "Bookmark-CHA1"
     url: "https://google.com"
     logo_path: "assets/bookmark-logo.png"
+    
+ - label: "Bookmark-CHA2"
+    url: "https://google.com"
+    logo_path: "assets/bookmark-logo.png"
