@@ -14,23 +14,21 @@ locals {
   }
 
   apps_oidc = [
-    merge(
+    for app in try(local.raw.oidc, []) : merge(
       local._oidc_defaults,
       app,
       {
-        # ensure required/typed fields always exist with correct types
-        label         = app.label
-        type          = try(app.type, "web")
-        redirect_uris = try(app.redirect_uris, [])
-        post_logout_redirect_uris = try(app.post_logout_redirect_uris, [])
-        grant_types   = try(app.grant_types, [])
-        response_types= try(app.response_types, [])
-        login_uri     = try(app.login_uri, null)
-        user_name_template = try(app.user_name_template, "")
-        token_endpoint_auth_method = try(app.token_endpoint_auth_method, null)
+        label                        = app.label
+        type                         = try(app.type, "web")
+        redirect_uris                = try(app.redirect_uris, [])
+        post_logout_redirect_uris    = try(app.post_logout_redirect_uris, [])
+        grant_types                  = try(app.grant_types, [])
+        response_types               = try(app.response_types, [])
+        login_uri                    = try(app.login_uri, null)
+        user_name_template           = try(app.user_name_template, "")
+        token_endpoint_auth_method   = try(app.token_endpoint_auth_method, null)
       }
     )
-    for app in try(local.raw.oidc, [])
   ]
 
   # ---------- SAML ----------
@@ -49,21 +47,19 @@ locals {
   }
 
   apps_saml = [
-    merge(
+    for app in try(local.raw.saml, []) : merge(
       local._saml_defaults,
       app,
       {
-        label    = app.label
-        acs_url  = app.acs_url
-        audience = app.audience
-        # keep templates present even if user omitted them (consistent shape)
-        subject_name_id_format   = try(app.subject_name_id_format, local._saml_defaults.subject_name_id_format)
-        subject_name_id_template = try(app.subject_name_id_template, local._saml_defaults.subject_name_id_template)
-        user_name_template       = try(app.user_name_template, local._saml_defaults.user_name_template)
-        attribute_statements     = try(app.attribute_statements, [])
+        label                        = app.label
+        acs_url                      = app.acs_url
+        audience                     = app.audience
+        subject_name_id_format       = try(app.subject_name_id_format, local._saml_defaults.subject_name_id_format)
+        subject_name_id_template     = try(app.subject_name_id_template, local._saml_defaults.subject_name_id_template)
+        user_name_template           = try(app.user_name_template, local._saml_defaults.user_name_template)
+        attribute_statements         = try(app.attribute_statements, [])
       }
     )
-    for app in try(local.raw.saml, [])
   ]
 
   # ---------- SWA ----------
@@ -73,25 +69,33 @@ locals {
     button_field   = "btn-login"
     logo_path      = "assets/bookmark-logo.png"
   }
+
   apps_swa = [
-    merge(local._swa_defaults, app, {
-      label = app.label
-      url   = app.url
-      logo_path = try(app.logo_path, local._swa_defaults.logo_path)
-    })
-    for app in try(local.raw.swa, [])
+    for app in try(local.raw.swa, []) : merge(
+      local._swa_defaults,
+      app,
+      {
+        label     = app.label
+        url       = app.url
+        logo_path = try(app.logo_path, local._swa_defaults.logo_path)
+      }
+    )
   ]
 
   # ---------- Bookmark ----------
   _bookmark_defaults = {
     logo_path = "assets/bookmark-logo.png"
   }
+
   apps_bookmark = [
-    merge(local._bookmark_defaults, app, {
-      label = app.label
-      url   = app.url
-      logo_path = try(app.logo_path, local._bookmark_defaults.logo_path)
-    })
-    for app in try(local.raw.bookmark, [])
+    for app in try(local.raw.bookmark, []) : merge(
+      local._bookmark_defaults,
+      app,
+      {
+        label     = app.label
+        url       = app.url
+        logo_path = try(app.logo_path, local._bookmark_defaults.logo_path)
+      }
+    )
   ]
 }
