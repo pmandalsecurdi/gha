@@ -5,7 +5,7 @@ on:
     branches: [ master ]  # change to [ main ] if your default branch is main
 
 permissions:
-  contents: read  # enough for the main repo; state repo pushes use PAT
+  contents: read  # main repo read; state repo pushes use PAT from secrets
 
 jobs:
   terraform:
@@ -29,7 +29,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 2) Checkout the separate state repo using PAT (so we can push)
+      # 2) Checkout the separate state repo (so state files are available locally)
       - name: Checkout State Repo
         uses: actions/checkout@v4
         with:
@@ -38,7 +38,7 @@ jobs:
           token: ${{ secrets.STATE_REPO_PAT }}   # fine-grained PAT with Contents: Read & Write
           fetch-depth: 0
 
-      # 3) Configure Git identity (required for commits from the runner)
+      # 3) Configure Git identity (needed for committing state back)
       - name: Configure Git Identity
         run: |
           git config --global user.name  "github-actions[bot]"
@@ -68,12 +68,12 @@ jobs:
 
           popd >/dev/null
 
-          # Restore state/lock into workspace if they exist
+          # ✅ Restore state/lock into workspace if they exist
           mkdir -p "state-repo/${ENV_NAME}"
           [ -f "state-repo/${ENV_NAME}/terraform.tfstate" ] && cp -f "state-repo/${ENV_NAME}/terraform.tfstate" ./terraform.tfstate || echo "No previous terraform.tfstate found"
           [ -f "state-repo/${ENV_NAME}/.terraform.lock.hcl" ] && cp -f "state-repo/${ENV_NAME}/.terraform.lock.hcl" ./.terraform.lock.hcl || echo "No previous lock file found"
 
-      # 5) Install Terraform (no Terraform Cloud config)
+      # 5) Install Terraform (CLI only; no Terraform Cloud config)
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
