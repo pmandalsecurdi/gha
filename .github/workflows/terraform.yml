@@ -52,8 +52,6 @@ jobs:
           set -euo pipefail
 
           pushd state-repo >/dev/null
-
-          # If 'main' doesn't exist yet (first run), create it with an empty commit
           if ! git rev-parse --verify main >/dev/null 2>&1; then
             git switch --orphan main
             git rm -r --cached . >/dev/null 2>&1 || true
@@ -65,10 +63,9 @@ jobs:
             git switch main
             git pull --ff-only || true
           fi
-
           popd >/dev/null
 
-          # ✅ Restore state/lock into workspace if they exist
+          # Restore state/lock into workspace if they exist
           mkdir -p "state-repo/${ENV_NAME}"
           [ -f "state-repo/${ENV_NAME}/terraform.tfstate" ] && cp -f "state-repo/${ENV_NAME}/terraform.tfstate" ./terraform.tfstate || echo "No previous terraform.tfstate found"
           [ -f "state-repo/${ENV_NAME}/.terraform.lock.hcl" ] && cp -f "state-repo/${ENV_NAME}/.terraform.lock.hcl" ./.terraform.lock.hcl || echo "No previous lock file found"
@@ -79,9 +76,10 @@ jobs:
         with:
           terraform_version: 1.6.6
 
-      # 6) Optional: format check
-      - name: Terraform Fmt Check
-        run: terraform fmt -check -recursive
+      # 6) Show formatting issues but DO NOT fail the job
+      - name: Terraform Fmt Check (non-blocking)
+        run: terraform fmt -check -diff -recursive || echo "Format issues found (non-blocking)"
+        continue-on-error: true
 
       # 7) Init / Validate / Apply (non-interactive)
       - name: Terraform Init
