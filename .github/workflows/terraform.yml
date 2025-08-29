@@ -2,7 +2,7 @@ name: Terraform Okta Integration
 
 on:
   push:
-    branches: [ master ]  # run automatically when changes land on main
+    branches: [ master ]  # run when changes land on master
 
 permissions:
   contents: read  # minimal for checkout
@@ -11,31 +11,32 @@ jobs:
   terraform:
     name: Terraform Workflow with External State (prod)
     runs-on: ubuntu-latest
-    concurrency: terraform-prod  # avoid overlapping runs for prod
+    concurrency: terraform-prod  # avoid overlapping prod runs
 
     env:
+      # Okta provider vars (set these as repo secrets)
       TF_VAR_okta_api_token: ${{ secrets.OKTA_API_TOKEN }}
-      TF_VAR_okta_org_name:  ${{ secrets.OKTA_ORG_NAME }}   # e.g., "springbee"
-      TF_VAR_okta_base_url:  ${{ secrets.OKTA_BASE_URL }}   # e.g., "okta.com"
+      TF_VAR_okta_org_name:  ${{ secrets.OKTA_ORG_NAME }}   # e.g., springbee
+      TF_VAR_okta_base_url:  ${{ secrets.OKTA_BASE_URL }}   # e.g., okta.com
 
     steps:
       - name: Checkout Main Repo
         uses: actions/checkout@v4
 
-      # Route all https://github.com/* traffic through your PAT for the state repo
+      # Route https://github.com/* via PAT so clone/push to state repo works
       - name: Configure PAT remote for state repo
         run: |
           git config --global url."https://x-access-token:${{ secrets.STATE_REPO_PAT }}@github.com/".insteadOf "https://github.com/"
 
-      - name: Clone Terraform State Repo (prod)
+      - name: Clone Terraform State Repo (restore if exists)
         run: |
           set -euo pipefail
           ENV_NAME=prod
 
-          git clone https://github.com/${{ github.repository_owner }}/iam_terraform_state.git state-repo
+          git clone "https://github.com/${{ github.repository_owner }}/iam_terraform_state.git" state-repo
           mkdir -p "state-repo/$ENV_NAME"
 
-          # Pull existing state/lock into the workspace if they exist
+          # Restore existing state/lock into workspace if present
           [ -f "state-repo/$ENV_NAME/terraform.tfstate" ] && cp -f "state-repo/$ENV_NAME/terraform.tfstate" ./terraform.tfstate || echo "No previous terraform.tfstate found"
           [ -f "state-repo/$ENV_NAME/.terraform.lock.hcl" ] && cp -f "state-repo/$ENV_NAME/.terraform.lock.hcl" ./.terraform.lock.hcl || echo "No previous lock file found"
 
@@ -53,12 +54,12 @@ jobs:
       - name: Terraform Apply (prod)
         run: terraform apply -auto-approve
 
-      - name: Backup Updated State to External Repo (prod)
+      - name: Backup Updated State to External Repo (create-or-update)
         run: |
           set -euo pipefail
           ENV_NAME=prod
 
-          # Ensure dest directory exists and copy back updated files if present
+          # Ensure destination dir and copy back updated files (creates first time, updates thereafter)
           mkdir -p "state-repo/$ENV_NAME"
           [ -f ./terraform.tfstate ] && cp -f ./terraform.tfstate "state-repo/$ENV_NAME/terraform.tfstate"
           [ -f ./.terraform.lock.hcl ] && cp -f ./.terraform.lock.hcl "state-repo/$ENV_NAME/.terraform.lock.hcl"
@@ -66,7 +67,7 @@ jobs:
           cd state-repo
           git add -A
 
-          # Commit only if there are actual changes
+          # Commit only if something actually changed
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
