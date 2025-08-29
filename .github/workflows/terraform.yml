@@ -1,11 +1,11 @@
-name: Terraform Okta Integration
+name: Terraform Okta Integration (prod)
 
 on:
   push:
     branches: [ master ]  # change to [ main ] if your default branch is main
 
 permissions:
-  contents: read  # enough for main repo; state repo pushes use PAT
+  contents: read  # enough for the main repo; state repo pushes use PAT
 
 jobs:
   terraform:
@@ -38,14 +38,15 @@ jobs:
           token: ${{ secrets.STATE_REPO_PAT }}   # fine-grained PAT with Contents: Read & Write
           fetch-depth: 0
 
-      # 3) Configure Git identity for commits from the runner
+      # 3) Configure Git identity (required for commits from the runner)
       - name: Configure Git Identity
         run: |
           git config --global user.name  "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/state-repo"
 
       # 4) Ensure 'main' exists in state repo, pull latest, and restore state if present
-      - name: Bootstrap & Restore State
+      - name: Bootstrap & Restore State (prod)
         shell: bash
         run: |
           set -euo pipefail
@@ -93,7 +94,7 @@ jobs:
         run: terraform apply -auto-approve -input=false
 
       # 8) Backup updated state back to the state repo and push if changed
-      - name: Backup State to External Repo
+      - name: Backup State to External Repo (prod)
         shell: bash
         run: |
           set -euo pipefail
