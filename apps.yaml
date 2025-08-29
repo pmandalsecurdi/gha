@@ -86,6 +86,4 @@ bookmark:
     url: "https://google.com"
     logo_path: "assets/bookmark-logo.png"
     
-  - label: "Bookmark-CHA2"
-    url: "https://gooe.com"
-    logo_path: "assets/bookmark-logo.png"
+
