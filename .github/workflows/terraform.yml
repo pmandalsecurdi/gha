@@ -11,10 +11,11 @@ jobs:
   terraform:
     name: Terraform Workflow with External State (prod)
     runs-on: ubuntu-latest
-    concurrency: terraform-prod  # avoid overlapping prod runs
+    concurrency:
+      group: terraform-prod
+      cancel-in-progress: true
 
     env:
-      # Okta provider vars (set these as repo secrets)
       TF_VAR_okta_api_token: ${{ secrets.OKTA_API_TOKEN }}
       TF_VAR_okta_org_name:  ${{ secrets.OKTA_ORG_NAME }}   # e.g., springbee
       TF_VAR_okta_base_url:  ${{ secrets.OKTA_BASE_URL }}   # e.g., okta.com
@@ -23,20 +24,42 @@ jobs:
       - name: Checkout Main Repo
         uses: actions/checkout@v4
 
-      # Route https://github.com/* via PAT so clone/push to state repo works
       - name: Configure PAT remote for state repo
         run: |
           git config --global url."https://x-access-token:${{ secrets.STATE_REPO_PAT }}@github.com/".insteadOf "https://github.com/"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Clone Terraform State Repo (restore if exists)
+        shell: bash
         run: |
           set -euo pipefail
           ENV_NAME=prod
+          STATE_REPO="https://github.com/${{ github.repository_owner }}/iam_terraform_state.git"
 
-          git clone "https://github.com/${{ github.repository_owner }}/iam_terraform_state.git" state-repo
+          git clone "$STATE_REPO" state-repo || {
+            echo "State repo clone failed"; exit 1;
+          }
+
+          # Mark safe to avoid Git safety checks
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/state-repo"
+
+          cd state-repo
+
+          # Ensure 'main' exists (first-time bootstrap)
+          if ! git rev-parse --verify main >/dev/null 2>&1; then
+            git switch -c main
+            git commit --allow-empty -m "Initialize main branch for state storage"
+            git push --set-upstream origin main
+          else
+            git switch main
+            git pull --ff-only || true
+          fi
+
+          cd "$GITHUB_WORKSPACE"
           mkdir -p "state-repo/$ENV_NAME"
 
-          # Restore existing state/lock into workspace if present
+          # Restore any prior state/lock into workspace
           [ -f "state-repo/$ENV_NAME/terraform.tfstate" ] && cp -f "state-repo/$ENV_NAME/terraform.tfstate" ./terraform.tfstate || echo "No previous terraform.tfstate found"
           [ -f "state-repo/$ENV_NAME/.terraform.lock.hcl" ] && cp -f "state-repo/$ENV_NAME/.terraform.lock.hcl" ./.terraform.lock.hcl || echo "No previous lock file found"
 
@@ -45,21 +68,25 @@ jobs:
         with:
           terraform_version: 1.6.6
 
+      - name: Terraform Fmt Check
+        run: terraform fmt -check -recursive
+
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -input=false
 
       - name: Terraform Validate
         run: terraform validate
 
       - name: Terraform Apply (prod)
-        run: terraform apply -auto-approve
+        # If you want a plan gate before apply, split into plan+upload+manual-approval.
+        run: terraform apply -auto-approve -input=false
 
       - name: Backup Updated State to External Repo (create-or-update)
+        shell: bash
         run: |
           set -euo pipefail
           ENV_NAME=prod
 
-          # Ensure destination dir and copy back updated files (creates first time, updates thereafter)
           mkdir -p "state-repo/$ENV_NAME"
           [ -f ./terraform.tfstate ] && cp -f ./terraform.tfstate "state-repo/$ENV_NAME/terraform.tfstate"
           [ -f ./.terraform.lock.hcl ] && cp -f ./.terraform.lock.hcl "state-repo/$ENV_NAME/.terraform.lock.hcl"
@@ -67,10 +94,9 @@ jobs:
           cd state-repo
           git add -A
 
-          # Commit only if something actually changed
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Backup state for $ENV_NAME at $(date -u)"
+            git commit -m "Backup state for $ENV_NAME at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             git push origin HEAD:main
           fi
