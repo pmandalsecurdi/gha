@@ -2,7 +2,7 @@ name: Terraform Okta Integration
 
 on:
   push:
-    branches: [ main ]  # run automatically when changes land on main
+    branches: [ master ]  # run automatically when changes land on main
 
 permissions:
   contents: read  # minimal for checkout
