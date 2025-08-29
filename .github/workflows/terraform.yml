@@ -2,10 +2,10 @@ name: Terraform Okta Integration
 
 on:
   push:
-    branches: [ master ]  # run when changes land on master
+    branches: [ master ]  # change to [ main ] if your default branch is main
 
 permissions:
-  contents: read  # minimal for checkout
+  contents: read  # enough for the main repo; pushes to state repo use PAT
 
 jobs:
   terraform:
@@ -16,61 +16,73 @@ jobs:
       cancel-in-progress: true
 
     env:
+      # Okta provider vars (set these as repo secrets)
       TF_VAR_okta_api_token: ${{ secrets.OKTA_API_TOKEN }}
       TF_VAR_okta_org_name:  ${{ secrets.OKTA_ORG_NAME }}   # e.g., springbee
       TF_VAR_okta_base_url:  ${{ secrets.OKTA_BASE_URL }}   # e.g., okta.com
 
     steps:
+      # 1) Checkout your Terraform code repo
       - name: Checkout Main Repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Configure PAT remote for state repo
+      # 2) Checkout the separate state repo using PAT (so we can push)
+      - name: Checkout State Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/iam_terraform_state
+          path: state-repo
+          token: ${{ secrets.STATE_REPO_PAT }}   # fine-grained PAT with Contents: Read & Write
+          fetch-depth: 0
+
+      # 3) Configure Git identity (required for commits from the runner)
+      - name: Configure Git Identity
         run: |
-          git config --global url."https://x-access-token:${{ secrets.STATE_REPO_PAT }}@github.com/".insteadOf "https://github.com/"
-          git config --global user.name "github-actions[bot]"
+          git config --global user.name  "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Clone Terraform State Repo (restore if exists)
+      # 4) Ensure 'main' exists in state repo, pull latest, and restore state if present
+      - name: Bootstrap & Restore State (prod)
         shell: bash
         run: |
           set -euo pipefail
           ENV_NAME=prod
-          STATE_REPO="https://github.com/${{ github.repository_owner }}/iam_terraform_state.git"
 
-          git clone "$STATE_REPO" state-repo || {
-            echo "State repo clone failed"; exit 1;
-          }
+          pushd state-repo >/dev/null
 
-          # Mark safe to avoid Git safety checks
-          git config --global --add safe.directory "$GITHUB_WORKSPACE/state-repo"
-
-          cd state-repo
-
-          # Ensure 'main' exists (first-time bootstrap)
+          # If 'main' doesn't exist yet (first run), create it with an empty commit
           if ! git rev-parse --verify main >/dev/null 2>&1; then
-            git switch -c main
-            git commit --allow-empty -m "Initialize main branch for state storage"
-            git push --set-upstream origin main
+            git switch --orphan main
+            git rm -r --cached . >/dev/null 2>&1 || true
+            echo "# Terraform state storage" > README.md
+            git add README.md
+            git commit -m "Initialize main branch for state storage"
+            git push -u origin main
           else
             git switch main
             git pull --ff-only || true
           fi
 
-          cd "$GITHUB_WORKSPACE"
-          mkdir -p "state-repo/$ENV_NAME"
+          popd >/dev/null
 
-          # Restore any prior state/lock into workspace
+          # Restore state/lock into workspace if they exist
+          mkdir -p "state-repo/$ENV_NAME"
           [ -f "state-repo/$ENV_NAME/terraform.tfstate" ] && cp -f "state-repo/$ENV_NAME/terraform.tfstate" ./terraform.tfstate || echo "No previous terraform.tfstate found"
           [ -f "state-repo/$ENV_NAME/.terraform.lock.hcl" ] && cp -f "state-repo/$ENV_NAME/.terraform.lock.hcl" ./.terraform.lock.hcl || echo "No previous lock file found"
 
+      # 5) Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.6
 
+      # 6) Format check (optional but recommended)
       - name: Terraform Fmt Check
         run: terraform fmt -check -recursive
 
+      # 7) Init / Validate / Apply (non-interactive)
       - name: Terraform Init
         run: terraform init -input=false
 
@@ -78,10 +90,10 @@ jobs:
         run: terraform validate
 
       - name: Terraform Apply (prod)
-        # If you want a plan gate before apply, split into plan+upload+manual-approval.
         run: terraform apply -auto-approve -input=false
 
-      - name: Backup Updated State to External Repo (create-or-update)
+      # 8) Backup updated state back to the state repo and push if changed
+      - name: Backup State to External Repo (prod)
         shell: bash
         run: |
           set -euo pipefail
@@ -98,5 +110,6 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Backup state for $ENV_NAME at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            # actions/checkout configured the remote with the PAT, so this push works
             git push origin HEAD:main
           fi
