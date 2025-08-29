@@ -5,7 +5,7 @@ on:
     branches: [ master ]  # change to [ main ] if your default branch is main
 
 permissions:
-  contents: read  # enough for the main repo; pushes to state repo use PAT
+  contents: read  # enough for main repo; state repo pushes use PAT
 
 jobs:
   terraform:
@@ -16,10 +16,11 @@ jobs:
       cancel-in-progress: true
 
     env:
+      ENV_NAME: prod
       # Okta provider vars (set these as repo secrets)
       TF_VAR_okta_api_token: ${{ secrets.OKTA_API_TOKEN }}
-      TF_VAR_okta_org_name:  ${{ secrets.OKTA_ORG_NAME }}   # e.g., springbee
-      TF_VAR_okta_base_url:  ${{ secrets.OKTA_BASE_URL }}   # e.g., okta.com
+      TF_VAR_okta_org_name:  ${{ secrets.OKTA_ORG_NAME }}
+      TF_VAR_okta_base_url:  ${{ secrets.OKTA_BASE_URL }}
 
     steps:
       # 1) Checkout your Terraform code repo
@@ -37,18 +38,17 @@ jobs:
           token: ${{ secrets.STATE_REPO_PAT }}   # fine-grained PAT with Contents: Read & Write
           fetch-depth: 0
 
-      # 3) Configure Git identity (required for commits from the runner)
+      # 3) Configure Git identity for commits from the runner
       - name: Configure Git Identity
         run: |
           git config --global user.name  "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       # 4) Ensure 'main' exists in state repo, pull latest, and restore state if present
-      - name: Bootstrap & Restore State (prod)
+      - name: Bootstrap & Restore State
         shell: bash
         run: |
           set -euo pipefail
-          ENV_NAME=prod
 
           pushd state-repo >/dev/null
 
@@ -68,17 +68,17 @@ jobs:
           popd >/dev/null
 
           # Restore state/lock into workspace if they exist
-          mkdir -p "state-repo/$ENV_NAME"
-          [ -f "state-repo/$ENV_NAME/terraform.tfstate" ] && cp -f "state-repo/$ENV_NAME/terraform.tfstate" ./terraform.tfstate || echo "No previous terraform.tfstate found"
-          [ -f "state-repo/$ENV_NAME/.terraform.lock.hcl" ] && cp -f "state-repo/$ENV_NAME/.terraform.lock.hcl" ./.terraform.lock.hcl || echo "No previous lock file found"
+          mkdir -p "state-repo/${ENV_NAME}"
+          [ -f "state-repo/${ENV_NAME}/terraform.tfstate" ] && cp -f "state-repo/${ENV_NAME}/terraform.tfstate" ./terraform.tfstate || echo "No previous terraform.tfstate found"
+          [ -f "state-repo/${ENV_NAME}/.terraform.lock.hcl" ] && cp -f "state-repo/${ENV_NAME}/.terraform.lock.hcl" ./.terraform.lock.hcl || echo "No previous lock file found"
 
-      # 5) Setup Terraform
+      # 5) Install Terraform (no Terraform Cloud config)
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.6
 
-      # 6) Format check (optional but recommended)
+      # 6) Optional: format check
       - name: Terraform Fmt Check
         run: terraform fmt -check -recursive
 
@@ -93,15 +93,14 @@ jobs:
         run: terraform apply -auto-approve -input=false
 
       # 8) Backup updated state back to the state repo and push if changed
-      - name: Backup State to External Repo (prod)
+      - name: Backup State to External Repo
         shell: bash
         run: |
           set -euo pipefail
-          ENV_NAME=prod
 
-          mkdir -p "state-repo/$ENV_NAME"
-          [ -f ./terraform.tfstate ] && cp -f ./terraform.tfstate "state-repo/$ENV_NAME/terraform.tfstate"
-          [ -f ./.terraform.lock.hcl ] && cp -f ./.terraform.lock.hcl "state-repo/$ENV_NAME/.terraform.lock.hcl"
+          mkdir -p "state-repo/${ENV_NAME}"
+          [ -f ./terraform.tfstate ] && cp -f ./terraform.tfstate "state-repo/${ENV_NAME}/terraform.tfstate"
+          [ -f ./.terraform.lock.hcl ] && cp -f ./.terraform.lock.hcl "state-repo/${ENV_NAME}/.terraform.lock.hcl"
 
           cd state-repo
           git add -A
@@ -109,7 +108,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Backup state for $ENV_NAME at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-            # actions/checkout configured the remote with the PAT, so this push works
+            git commit -m "Backup state for ${ENV_NAME} at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             git push origin HEAD:main
           fi
