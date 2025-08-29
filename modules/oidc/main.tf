@@ -31,13 +31,8 @@ resource "okta_app_oauth" "oidc_apps" {
   post_logout_redirect_uris = lookup(each.value, "type", "web") == "service" ? null : lookup(each.value, "post_logout_redirect_uris", null)
   login_uri                 = lookup(each.value, "login_uri", null)
 
-  # ---- null-safe handling for username template ----
-  # Keep the actual template null if not provided (so the provider can omit it)
-  user_name_template = try(each.value.user_name_template, null)
 
-  # Decide the type based on a safe string ("" if missing/null)
   user_name_template_type = length(trimspace(try(each.value.user_name_template, ""))) > 0 ? "CUSTOM" : "BUILT_IN"
-  # --------------------------------------------------
 
   omit_secret = contains(["browser", "native"], lookup(each.value, "type", "web")) ? true : null
 
