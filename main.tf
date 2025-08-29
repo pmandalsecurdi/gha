@@ -14,13 +14,6 @@ provider "okta" {
 }
 
 
-locals {
-  apps_data     = yamldecode(file("${path.module}/apps.yaml"))
-  apps_oidc     = try(local.apps_data.oidc, [])
-  apps_saml     = try(local.apps_data.saml, [])
-  apps_swa      = try(local.apps_data.swa, [])
-  apps_bookmark = try(local.apps_data.bookmark, [])
-}
 
 module "oidc" {
   source = "./modules/oidc"
