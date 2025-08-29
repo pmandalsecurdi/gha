@@ -15,24 +15,29 @@ jobs:
 
     env:
       TF_VAR_okta_api_token: ${{ secrets.OKTA_API_TOKEN }}
-      TF_VAR_okta_org_name:  ${{ secrets.OKTA_ORG_NAME }}
-      TF_VAR_okta_base_url:  ${{ secrets.OKTA_BASE_URL }}
+      TF_VAR_okta_org_name:  ${{ secrets.OKTA_ORG_NAME }}   # e.g., "springbee"
+      TF_VAR_okta_base_url:  ${{ secrets.OKTA_BASE_URL }}   # e.g., "okta.com"
 
     steps:
       - name: Checkout Main Repo
         uses: actions/checkout@v4
 
+      # Route all https://github.com/* traffic through your PAT for the state repo
       - name: Configure PAT remote for state repo
         run: |
           git config --global url."https://x-access-token:${{ secrets.STATE_REPO_PAT }}@github.com/".insteadOf "https://github.com/"
 
       - name: Clone Terraform State Repo (prod)
         run: |
+          set -euo pipefail
           ENV_NAME=prod
+
           git clone https://github.com/${{ github.repository_owner }}/iam_terraform_state.git state-repo
-          mkdir -p state-repo/$ENV_NAME
-          cp -f state-repo/$ENV_NAME/terraform.tfstate terraform.tfstate || echo "No previous terraform.tfstate found"
-          cp -f state-repo/$ENV_NAME/.terraform.lock.hcl .terraform.lock.hcl || echo "No previous lock file found"
+          mkdir -p "state-repo/$ENV_NAME"
+
+          # Pull existing state/lock into the workspace if they exist
+          [ -f "state-repo/$ENV_NAME/terraform.tfstate" ] && cp -f "state-repo/$ENV_NAME/terraform.tfstate" ./terraform.tfstate || echo "No previous terraform.tfstate found"
+          [ -f "state-repo/$ENV_NAME/.terraform.lock.hcl" ] && cp -f "state-repo/$ENV_NAME/.terraform.lock.hcl" ./.terraform.lock.hcl || echo "No previous lock file found"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -50,9 +55,21 @@ jobs:
 
       - name: Backup Updated State to External Repo (prod)
         run: |
+          set -euo pipefail
           ENV_NAME=prod
-          cp -f terraform.tfstate .terraform.lock.hcl state-repo/$ENV_NAME/
+
+          # Ensure dest directory exists and copy back updated files if present
+          mkdir -p "state-repo/$ENV_NAME"
+          [ -f ./terraform.tfstate ] && cp -f ./terraform.tfstate "state-repo/$ENV_NAME/terraform.tfstate"
+          [ -f ./.terraform.lock.hcl ] && cp -f ./.terraform.lock.hcl "state-repo/$ENV_NAME/.terraform.lock.hcl"
+
           cd state-repo
-          git add .
-          git commit -m "Backup state for $ENV_NAME at $(date -u)" || echo "No changes to commit"
-          git push origin HEAD:main
+          git add -A
+
+          # Commit only if there are actual changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Backup state for $ENV_NAME at $(date -u)"
+            git push origin HEAD:main
+          fi
