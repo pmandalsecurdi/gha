@@ -1,5 +1,5 @@
 oidc:
-  - label: "OIDC-CHAp"
+  - label: "OIDC-CHA"
     type: web
     redirect_uris: ["https://openidconnect.net/callback"]
     post_logout_redirect_uris: ["https://openidconnect.net/logout"]
