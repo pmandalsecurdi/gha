@@ -34,7 +34,7 @@ resource "okta_app_saml" "saml_apps" {
     null
   )
 
- 
+
   user_name_template_type = (
     try(
       replace(replace(lookup(each.value, "user_name_template", null), "{", ""), "}", ""),
@@ -45,10 +45,10 @@ resource "okta_app_saml" "saml_apps" {
   user_name_template_push_status = lookup(each.value, "user_name_template_push_status", null)
 
 
-  response_signed      = coalesce(try(each.value.response_signed, null), true)
-  assertion_signed     = coalesce(try(each.value.assertion_signed, null), true)
-  signature_algorithm  = coalesce(try(each.value.signature_algorithm, null), "RSA_SHA256")
-  digest_algorithm     = coalesce(try(each.value.digest_algorithm, null), "SHA256")
+  response_signed     = coalesce(try(each.value.response_signed, null), true)
+  assertion_signed    = coalesce(try(each.value.assertion_signed, null), true)
+  signature_algorithm = coalesce(try(each.value.signature_algorithm, null), "RSA_SHA256")
+  digest_algorithm    = coalesce(try(each.value.digest_algorithm, null), "SHA256")
   authn_context_class_ref = coalesce(
     try(each.value.authn_context_class_ref, null),
     "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"
