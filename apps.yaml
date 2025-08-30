@@ -86,5 +86,5 @@ bookmark:
   - label: "Bookmark-CHA1"
     url: "https://zoom.com"
     logo_path: "assets/bookmark-logo.png"
-    active: false
+    active: true
 
