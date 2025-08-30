@@ -18,32 +18,32 @@ locals {
       local._oidc_defaults,
       app,
       {
-        label                        = app.label
-        type                         = try(app.type, "web")
-        redirect_uris                = try(app.redirect_uris, [])
-        post_logout_redirect_uris    = try(app.post_logout_redirect_uris, [])
-        grant_types                  = try(app.grant_types, [])
-        response_types               = try(app.response_types, [])
-        login_uri                    = try(app.login_uri, null)
-        user_name_template           = try(app.user_name_template, "")
-        token_endpoint_auth_method   = try(app.token_endpoint_auth_method, null)
+        label                      = app.label
+        type                       = try(app.type, "web")
+        redirect_uris              = try(app.redirect_uris, [])
+        post_logout_redirect_uris  = try(app.post_logout_redirect_uris, [])
+        grant_types                = try(app.grant_types, [])
+        response_types             = try(app.response_types, [])
+        login_uri                  = try(app.login_uri, null)
+        user_name_template         = try(app.user_name_template, "")
+        token_endpoint_auth_method = try(app.token_endpoint_auth_method, null)
       }
     )
   ]
 
   # ---------- SAML ----------
   _saml_defaults = {
-    subject_name_id_format          = "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
-    subject_name_id_template        = "{user.email}"
-    user_name_template              = "{user.email}"
-    user_name_template_push_status  = null
-    response_signed                 = true
-    assertion_signed                = true
-    signature_algorithm             = "RSA_SHA256"
-    digest_algorithm                = "SHA256"
-    authn_context_class_ref         = "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"
-    x509_certificate_path           = null
-    attribute_statements            = []
+    subject_name_id_format         = "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+    subject_name_id_template       = "{user.email}"
+    user_name_template             = "{user.email}"
+    user_name_template_push_status = null
+    response_signed                = true
+    assertion_signed               = true
+    signature_algorithm            = "RSA_SHA256"
+    digest_algorithm               = "SHA256"
+    authn_context_class_ref        = "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"
+    x509_certificate_path          = null
+    attribute_statements           = []
   }
 
   apps_saml = [
@@ -51,13 +51,13 @@ locals {
       local._saml_defaults,
       app,
       {
-        label                        = app.label
-        acs_url                      = app.acs_url
-        audience                     = app.audience
-        subject_name_id_format       = try(app.subject_name_id_format, local._saml_defaults.subject_name_id_format)
-        subject_name_id_template     = try(app.subject_name_id_template, local._saml_defaults.subject_name_id_template)
-        user_name_template           = try(app.user_name_template, local._saml_defaults.user_name_template)
-        attribute_statements         = try(app.attribute_statements, [])
+        label                    = app.label
+        acs_url                  = app.acs_url
+        audience                 = app.audience
+        subject_name_id_format   = try(app.subject_name_id_format, local._saml_defaults.subject_name_id_format)
+        subject_name_id_template = try(app.subject_name_id_template, local._saml_defaults.subject_name_id_template)
+        user_name_template       = try(app.user_name_template, local._saml_defaults.user_name_template)
+        attribute_statements     = try(app.attribute_statements, [])
       }
     )
   ]
