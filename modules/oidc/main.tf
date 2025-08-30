@@ -27,7 +27,7 @@ resource "okta_app_oauth" "oidc_apps" {
     lookup(each.value, "type", "web") == "service" ? [] : ["code"]
   )
 
-  redirect_uris             = lookup(each.value, "type", "web") == "service" ? []   : each.value.redirect_uris
+  redirect_uris             = lookup(each.value, "type", "web") == "service" ? [] : each.value.redirect_uris
   post_logout_redirect_uris = lookup(each.value, "type", "web") == "service" ? null : lookup(each.value, "post_logout_redirect_uris", null)
   login_uri                 = lookup(each.value, "login_uri", null)
 
