@@ -95,6 +95,7 @@ locals {
         label     = app.label
         url       = app.url
         logo_path = try(app.logo_path, local._bookmark_defaults.logo_path)
+        status    = app.active == true ? "ACTIVE" : "INACTIVE"
       }
     )
   ]
