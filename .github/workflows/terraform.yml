@@ -2,84 +2,40 @@ name: Terraform Okta Integration (prod)
 
 on:
   push:
-    branches: [ master ]  # change to [ main ] if your default branch is main
-
-permissions:
-  contents: read  # read-only for main repo; state repo pushes use PAT
+    branches: [ main ]   # change to your default branch
 
 jobs:
   terraform:
-    name: Terraform Workflow with External State (prod)
     runs-on: ubuntu-latest
-    concurrency:
-      group: terraform-prod
-      cancel-in-progress: true
 
     env:
-      ENV_NAME: prod
       TF_VAR_okta_api_token: ${{ secrets.OKTA_API_TOKEN }}
       TF_VAR_okta_org_name:  ${{ secrets.OKTA_ORG_NAME }}
       TF_VAR_okta_base_url:  ${{ secrets.OKTA_BASE_URL }}
 
     steps:
-      # 1) Checkout your Terraform code repo (this repo)
-      - name: Checkout Main Repo
+      - name: Checkout Repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # 2) Checkout the iam_terraform_state repo (for state storage)
       - name: Checkout State Repo
         uses: actions/checkout@v4
         with:
           repository: ${{ github.repository_owner }}/iam_terraform_state
           path: state-repo
-          token: ${{ secrets.STATE_REPO_PAT }}   # PAT with Contents: Read & Write
+          token: ${{ secrets.STATE_REPO_PAT }}
           fetch-depth: 0
 
-      # 3) Configure Git identity for commits to state repo
-      - name: Configure Git Identity
+      - name: Restore State
         run: |
-          git config --global user.name  "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global --add safe.directory "$GITHUB_WORKSPACE/state-repo"
+          mkdir -p state-repo/prod
+          cp -f state-repo/prod/terraform.tfstate terraform.tfstate || true
+          cp -f state-repo/prod/.terraform.lock.hcl .terraform.lock.hcl || true
 
-      # 4) Ensure main branch exists in state repo and restore any state
-      - name: Bootstrap & Restore State (prod)
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          pushd state-repo >/dev/null
-          if ! git rev-parse --verify main >/dev/null 2>&1; then
-            git switch --orphan main
-            git rm -r --cached . >/dev/null 2>&1 || true
-            echo "# Terraform state storage" > README.md
-            git add README.md
-            git commit -m "Initialize main branch for state storage"
-            git push -u origin main
-          else
-            git switch main
-            git pull --ff-only || true
-          fi
-          popd >/dev/null
-
-          mkdir -p "state-repo/${ENV_NAME}"
-          [ -f "state-repo/${ENV_NAME}/terraform.tfstate" ] && cp -f "state-repo/${ENV_NAME}/terraform.tfstate" ./terraform.tfstate || echo "No previous terraform.tfstate found"
-          [ -f "state-repo/${ENV_NAME}/.terraform.lock.hcl" ] && cp -f "state-repo/${ENV_NAME}/.terraform.lock.hcl" ./.terraform.lock.hcl || echo "No previous lock file found"
-
-      # 5) Install Terraform CLI
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.6
 
-      # 6) Show fmt issues but don't fail prod runs
-      - name: Terraform Fmt Check (non-blocking)
-        run: terraform fmt -check -diff -recursive || echo "Format issues found (non-blocking)"
-        continue-on-error: true
-
-      # 7) Init / Validate / Apply
       - name: Terraform Init
         run: terraform init -input=false
 
@@ -89,21 +45,12 @@ jobs:
       - name: Terraform Apply (prod)
         run: terraform apply -auto-approve -input=false
 
-      # 8) Backup updated state back to iam_terraform_state repo
-      - name: Backup State to iam_terraform_state (prod)
-        shell: bash
+      - name: Backup State
         run: |
-          set -euo pipefail
-
-          mkdir -p "state-repo/${ENV_NAME}"
-          [ -f ./terraform.tfstate ] && cp -f ./terraform.tfstate "state-repo/${ENV_NAME}/terraform.tfstate"
-          [ -f ./.terraform.lock.hcl ] && cp -f ./.terraform.lock.hcl "state-repo/${ENV_NAME}/.terraform.lock.hcl"
-
+          mkdir -p state-repo/prod
+          cp -f terraform.tfstate state-repo/prod/terraform.tfstate
+          cp -f .terraform.lock.hcl state-repo/prod/.terraform.lock.hcl
           cd state-repo
           git add -A
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Backup state for ${ENV_NAME} at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-            git push origin HEAD:main
-          fi
+          git commit -m "Backup prod state at $(date -u +'%Y-%m-%dT%H:%M:%SZ')" || echo "No changes"
+          git push
