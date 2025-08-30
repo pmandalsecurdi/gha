@@ -81,9 +81,10 @@ bookmark:
   - label: "Bookmark-CHA"
     url: "https://jadoo.com"
     logo_path: "assets/bookmark-logo.png"
+    active: false
 
   - label: "Bookmark-CHA1"
     url: "https://zoom.com"
     logo_path: "assets/bookmark-logo.png"
-    
+    active: false
 
