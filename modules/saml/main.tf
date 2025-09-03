@@ -70,6 +70,3 @@ resource "okta_app_saml" "saml_apps" {
 
 }
 
-output "private_key"{
-sensetive = true
-}
