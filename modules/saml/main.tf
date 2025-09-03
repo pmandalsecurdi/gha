@@ -67,7 +67,9 @@ resource "okta_app_saml" "saml_apps" {
   lifecycle {
     prevent_destroy = true
   }
+
+}
+
 output "private_key"{
 sensetive = true
-}
 }
