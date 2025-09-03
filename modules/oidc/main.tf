@@ -34,7 +34,7 @@ resource "okta_app_oauth" "oidc_apps" {
 
   user_name_template_type = length(trimspace(try(each.value.user_name_template, ""))) > 0 ? "CUSTOM" : "BUILT_IN"
 
-  omit_secret = contains(["browser", "native"], lookup(each.value, "type", "web")) ? true : null
+  omit_secret = true
 
   lifecycle {
     prevent_destroy = true
