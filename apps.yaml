@@ -87,4 +87,8 @@ bookmark:
     url: "https://zoomede.com"
     logo_path: "assets/bookmark-logo.png"
     active: true
+  - label: "Bookmark-CHA3"
+    url: "https://zoomede.com"
+    logo_path: "assets/bookmark-logo.png"
+    active: true
 
