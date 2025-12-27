@@ -31,7 +31,7 @@ This project automates the onboarding of various application types into Okta usi
 
 ## ✅ Usage
 
-1. **Install Terraform** if not already:
+1. **Install Terraform** if not already:1
    https://www.terraform.io/downloads
 
 2. **Initialize the project**:
